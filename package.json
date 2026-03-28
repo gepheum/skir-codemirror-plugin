@@ -15,7 +15,7 @@
     "src/",
     "README.md"
   ],
-  "license": "ISC",
+  "license": "MIT",
   "author": "Tyler Fibonacci <gepheum@gmail.com>",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
