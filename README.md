@@ -3,6 +3,8 @@
 This library provides a CodeMirror-based JSON editor for Skir values.
 It helps users edit Skir request/response payloads in a human-readable JSON form while preserving schema-aware guidance and validation.
 
+Demo: `npx skir-studio-demo`
+
 ## What It Provides
 
 - A ready-to-use `createEditorState(...)` factory for CodeMirror.
