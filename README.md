@@ -28,9 +28,12 @@ npm install skir-codemirror-plugin
 The package root exports:
 
 - `createEditorState`
+- `ensureJsonState`
+- `toJson`
 - `CreateEditorStateParams` (type)
 - `CustomTheme` (type)
-- `Json` (type)
+- `JsonState` (type)
+- all types from `./json/types`
 
 ## Usage
 
@@ -58,6 +61,41 @@ new EditorView({
 	state,
 	parent: document.getElementById("editor")!,
 });
+```
+
+## Read Current JSON Value
+
+Use `ensureJsonState(view, schema)` to force parse/validation against the current
+document and retrieve the latest state. Then call `toJson(...)` on
+`parseResult.value` when it exists.
+
+```ts
+import { EditorView } from "@codemirror/view";
+import {
+	createEditorState,
+	ensureJsonState,
+	toJson,
+	type TypeDefinition,
+} from "skir-codemirror-plugin";
+
+const schema: TypeDefinition = {
+	type: { kind: "primitive", value: "string" },
+	records: [],
+};
+
+const view = new EditorView({
+	state: createEditorState({ schema }),
+	parent: document.getElementById("editor")!,
+});
+
+const jsonState = ensureJsonState(view, schema);
+
+if (jsonState.parseResult.value) {
+	const jsonValue = toJson(jsonState.parseResult.value);
+	console.log("Current JSON value:", jsonValue);
+} else {
+	console.log("Cannot convert to JSON:", jsonState.parseResult.errors);
+}
 ```
 
 ## createEditorState Parameters
