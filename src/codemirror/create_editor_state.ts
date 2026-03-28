@@ -266,7 +266,7 @@ export function createEditorState({
   });
 }
 
-interface CustomTheme {
+export interface CustomTheme {
   backgroundColor: string;
   lighterBgColor: string;
   borderColor: string;
