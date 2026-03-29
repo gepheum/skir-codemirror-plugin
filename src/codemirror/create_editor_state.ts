@@ -67,7 +67,7 @@ export function createEditorState({
     doc: JSON.stringify(content, null, 2),
     extensions: [
       EditorState.readOnly.of(!!readOnly),
-      enterKeyHandler(schema),
+      readOnly ? [] : enterKeyHandler(schema),
       basicSetup,
       EditorState.languageData.of(() => [
         {
