@@ -212,7 +212,9 @@ const BUILTIN_THEME_DEFAULTS: Record<BuiltinThemeName, ThemeDefaults> = {
   "xcode-light": codeMirrorThemes.defaultSettingsXcodeLight,
 };
 
-function pickColor(...candidates: Array<string | undefined>): string | undefined {
+function pickColor(
+  ...candidates: Array<string | undefined>
+): string | undefined {
   for (const candidate of candidates) {
     if (candidate && candidate !== "transparent") {
       return candidate;
@@ -221,9 +223,16 @@ function pickColor(...candidates: Array<string | undefined>): string | undefined
   return undefined;
 }
 
-function themeFromDefaults(defaults: ThemeDefaults, themeExtension: Extension): CustomTheme {
+function themeFromDefaults(
+  defaults: ThemeDefaults,
+  themeExtension: Extension,
+): CustomTheme {
   const background = pickColor(defaults.background, defaults.gutterBackground);
-  const foreground = pickColor(defaults.caret, defaults.foreground, defaults.gutterForeground);
+  const foreground = pickColor(
+    defaults.caret,
+    defaults.foreground,
+    defaults.gutterForeground,
+  );
   const selection = pickColor(
     defaults.selection,
     defaults.selectionMatch,
@@ -232,11 +241,18 @@ function themeFromDefaults(defaults: ThemeDefaults, themeExtension: Extension): 
   return {
     backgroundColor: background ?? "#1a1b26",
     lighterBgColor:
-      pickColor(defaults.gutterBackground, defaults.lineHighlight, background) ??
-      "#1f2335",
+      pickColor(
+        defaults.gutterBackground,
+        defaults.lineHighlight,
+        background,
+      ) ?? "#1f2335",
     borderColor:
-      pickColor(defaults.gutterBorder, defaults.selectionMatch, defaults.selection, defaults.foreground) ??
-      "#414868",
+      pickColor(
+        defaults.gutterBorder,
+        defaults.selectionMatch,
+        defaults.selection,
+        defaults.foreground,
+      ) ?? "#414868",
     foregroundColor: foreground ?? "#c0caf5",
     accentColor: pickColor(defaults.foreground, defaults.caret) ?? "#7aa2f7",
     errorColor: pickColor(defaults.caret, defaults.foreground) ?? "#f7768e",
