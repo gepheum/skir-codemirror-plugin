@@ -22,7 +22,7 @@ export function toJson(value: JsonValue): Json {
 export function makeJsonTemplate(
   type: TypeSignature,
   idToRecordDef: { [id: string]: RecordDefinition },
-  depth?: "depth",
+  nested?: "nested",
 ): Json {
   switch (type.kind) {
     case "array": {
@@ -34,13 +34,13 @@ export function makeJsonTemplate(
     case "record": {
       const recordDef = idToRecordDef[type.value]!;
       if (recordDef.kind === "struct") {
-        if (depth) {
+        if (nested) {
           return {};
         }
         return Object.fromEntries(
           recordDef.fields.map((field) => [
             field.name,
-            makeJsonTemplate(field.type!, idToRecordDef, "depth"),
+            makeJsonTemplate(field.type!, idToRecordDef, "nested"),
           ]),
         );
       } else {

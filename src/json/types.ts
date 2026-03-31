@@ -39,6 +39,7 @@ export interface JsonArray {
   /// From '[' to ']' included.
   readonly segment: Segment;
   readonly values: JsonValue[];
+  readonly indent: number;
   expectedType?: TypeSignature;
 }
 
@@ -63,6 +64,7 @@ export interface JsonObject {
   readonly keyValues: { [key: string]: JsonKeyValue };
   /// Includes "broken" keys which produced a parsing error.
   readonly allKeys: readonly JsonKey[];
+  readonly indent: number;
   expectedType?: TypeSignature;
 }
 
@@ -73,6 +75,7 @@ export interface JsonLiteral {
   readonly segment: Segment;
   readonly jsonCode: string;
   readonly type: "boolean" | "null" | "number" | "string";
+  readonly indent: number;
   expectedType?: TypeSignature;
 }
 
@@ -223,6 +226,10 @@ export interface TypeHint {
   readonly valueContext: JsonValueContext;
   /// In order. All are included in 'valueContext.value.segment'.
   readonly childHints: readonly TypeHint[];
+  /// Set if the expected type is an enum and the value is a literal string.
+  /// In that case, the editor can show a dropdown with the possible variants
+  /// of the enum.
+  readonly enumDefinition?: EnumDefinition;
 }
 
 export type Hint =

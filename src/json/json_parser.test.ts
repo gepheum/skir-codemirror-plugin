@@ -63,6 +63,18 @@ describe("json_parser", () => {
     });
   });
 
+  it("tracks indent for top-level literal", () => {
+    expect(parseJsonValue("   true")).toMatch({
+      value: {
+        kind: "literal",
+        jsonCode: "true",
+        type: "boolean",
+        indent: 3,
+      },
+      errors: [],
+    });
+  });
+
   it("parses empty array", () => {
     expect(parseJsonValue("[]")).toMatch({
       value: { kind: "array", values: [] },
@@ -116,6 +128,45 @@ describe("json_parser", () => {
         { segment: { start: 1, end: 1 }, replacement: "\n  " },
         { segment: { start: 7, end: 7 }, replacement: "\n" },
       ],
+    });
+  });
+
+  it("tracks indent from line leading spaces for field values", () => {
+    const result = parseJsonValue(`{
+  "a": 1,
+  "b": [
+    2
+  ]
+}`);
+
+    expect(result).toMatch({
+      value: {
+        kind: "object",
+        indent: 0,
+        keyValues: {
+          a: {
+            value: {
+              kind: "literal",
+              jsonCode: "1",
+              indent: 2,
+            },
+          },
+          b: {
+            value: {
+              kind: "array",
+              indent: 2,
+              values: [
+                {
+                  kind: "literal",
+                  jsonCode: "2",
+                  indent: 4,
+                },
+              ],
+            },
+          },
+        },
+      },
+      errors: [],
     });
   });
 

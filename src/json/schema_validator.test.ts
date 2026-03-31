@@ -189,6 +189,81 @@ describe("schema_validator", () => {
     ]);
   });
 
+  it("stores enum definition in type hint for UNKNOWN enum literal", () => {
+    const schema: TypeDefinition = {
+      type: { kind: "record", value: "MyEnum" },
+      records: [
+        {
+          kind: "enum",
+          id: "MyEnum",
+          variants: [
+            { name: "First", number: 1 },
+            { name: "Second", number: 2 },
+          ],
+        },
+      ],
+    };
+
+    const result = validateSchema(parse('"UNKNOWN"'), schema);
+    expect(result.errors).toMatch([]);
+    if (!result.rootTypeHint) {
+      throw new Error("Expected root type hint");
+    }
+    expect(result.rootTypeHint.enumDefinition).toMatch({
+      kind: "enum",
+      id: "MyEnum",
+      variants: [
+        { name: "First", number: 1 },
+        { name: "Second", number: 2 },
+      ],
+    });
+  });
+
+  it("stores enum definition in nested UNKNOWN enum field hint", () => {
+    const schema: TypeDefinition = {
+      type: { kind: "record", value: "MyStruct" },
+      records: [
+        {
+          kind: "struct",
+          id: "MyStruct",
+          fields: [
+            {
+              name: "status",
+              number: 1,
+              type: { kind: "record", value: "MyEnum" },
+            },
+          ],
+        },
+        {
+          kind: "enum",
+          id: "MyEnum",
+          variants: [
+            { name: "First", number: 1 },
+            { name: "Second", number: 2 },
+          ],
+        },
+      ],
+    };
+
+    const result = validateSchema(parse('{"status": "UNKNOWN"}'), schema);
+    expect(result.errors).toMatch([]);
+    if (!result.rootTypeHint) {
+      throw new Error("Expected root type hint");
+    }
+    if (result.rootTypeHint.childHints.length !== 1) {
+      throw new Error("Expected one child type hint");
+    }
+    const statusHint = result.rootTypeHint.childHints[0];
+    expect(statusHint.enumDefinition).toMatch({
+      kind: "enum",
+      id: "MyEnum",
+      variants: [
+        { name: "First", number: 1 },
+        { name: "Second", number: 2 },
+      ],
+    });
+  });
+
   it("validates enum (object with kind)", () => {
     const schema: TypeDefinition = {
       type: { kind: "record", value: "MyEnum" },

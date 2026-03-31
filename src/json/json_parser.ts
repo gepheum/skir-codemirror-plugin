@@ -33,6 +33,7 @@ export function parseJsonValue(input: string): JsonParseResult {
 interface JsonToken {
   segment: Segment;
   jsonCode: string;
+  indent: number;
 }
 
 interface JsonTokens {
@@ -43,15 +44,28 @@ interface JsonTokens {
 function tokenize(input: string): JsonTokens | JsonError {
   const tokens: JsonToken[] = [];
   let pos = 0;
+  let lineIndent = 0;
+  let lineHasContent = false;
 
   const whitespaceRegex = /[ \t\r\n]*/y;
   const tokenRegex =
     /([[\]{}:,]|(-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)|false|true|null|("(((?=\\)\\(["\\/ bfnrt]|u[0-9a-fA-F]{4}))|[^"\\\0-\x1F\x7F]+)*")|$)/y;
 
   while (true) {
+    const beforeWhitespacePos = pos;
     whitespaceRegex.lastIndex = pos;
     whitespaceRegex.exec(input);
     pos = whitespaceRegex.lastIndex;
+
+    for (let i = beforeWhitespacePos; i < pos; ++i) {
+      const ch = input[i];
+      if (ch === "\n") {
+        lineIndent = 0;
+        lineHasContent = false;
+      } else if (!lineHasContent && (ch === " " || ch === "\t")) {
+        lineIndent++;
+      }
+    }
 
     tokenRegex.lastIndex = pos;
     const tokenMatch = tokenRegex.exec(input);
@@ -61,9 +75,16 @@ function tokenize(input: string): JsonTokens | JsonError {
         start: pos,
         end: pos + tokenText.length,
       };
-      const token: JsonToken = { segment, jsonCode: tokenText };
+      const token: JsonToken = {
+        segment,
+        jsonCode: tokenText,
+        indent: lineIndent,
+      };
       pos = tokenRegex.lastIndex;
       tokens.push(token);
+      if (tokenText !== "") {
+        lineHasContent = true;
+      }
       if (tokenText === "") {
         return {
           kind: "tokens",
@@ -96,6 +117,8 @@ class JsonParser {
     const token = this.peekToken();
     const firstChar = token.jsonCode ? token.jsonCode[0] : "";
 
+    const { indent } = token;
+
     switch (firstChar) {
       case "[":
         return this.parseArray();
@@ -109,6 +132,7 @@ class JsonParser {
           segment: token.segment,
           jsonCode: "null",
           type: "null",
+          indent,
         };
       case "f":
         this.nextToken();
@@ -118,6 +142,7 @@ class JsonParser {
           segment: token.segment,
           jsonCode: "false",
           type: "boolean",
+          indent,
         };
       case "t":
         this.nextToken();
@@ -127,6 +152,7 @@ class JsonParser {
           segment: token.segment,
           jsonCode: "true",
           type: "boolean",
+          indent,
         };
       case '"':
         this.nextToken();
@@ -136,6 +162,7 @@ class JsonParser {
           segment: token.segment,
           jsonCode: token.jsonCode,
           type: "string",
+          indent,
         };
       case "0":
       case "1":
@@ -155,6 +182,7 @@ class JsonParser {
           segment: token.segment,
           jsonCode: token.jsonCode,
           type: "number",
+          indent,
         };
     }
 
@@ -169,6 +197,7 @@ class JsonParser {
 
   private parseArray(): JsonArray {
     const leftBracket = this.nextToken();
+    const { indent } = leftBracket;
     const values: JsonValue[] = [];
     while (true) {
       if (this.peekToken().jsonCode === "]") {
@@ -181,6 +210,7 @@ class JsonParser {
             end: rightBracket.segment.end,
           },
           values,
+          indent,
         };
       }
       if (this.peekToken().jsonCode === "}") {
@@ -198,6 +228,7 @@ class JsonParser {
             end: wrongBracket.segment.end,
           },
           values,
+          indent,
         };
       }
       if (this.peekToken().jsonCode === "") {
@@ -211,6 +242,7 @@ class JsonParser {
             end: this.peekToken().segment.start,
           },
           values,
+          indent,
         };
       }
       const value = this.parseValueOrSkip();
@@ -233,6 +265,7 @@ class JsonParser {
 
   private parseObject(): JsonObject {
     const leftBracket = this.nextToken();
+    const { indent } = leftBracket;
     const keyValues: { [key: string]: JsonKeyValue } = {};
     const allKeys: JsonKey[] = [];
     while (true) {
@@ -247,6 +280,7 @@ class JsonParser {
           },
           keyValues,
           allKeys,
+          indent,
         };
       }
       if (this.peekToken().jsonCode === "]") {
@@ -265,6 +299,7 @@ class JsonParser {
           },
           keyValues,
           allKeys,
+          indent,
         };
       }
       if (this.peekToken().jsonCode === "") {
@@ -279,6 +314,7 @@ class JsonParser {
           },
           keyValues,
           allKeys,
+          indent,
         };
       }
       const keyToken = this.peekToken();

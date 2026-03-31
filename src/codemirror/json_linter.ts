@@ -1,7 +1,8 @@
 import { Diagnostic } from "@codemirror/lint";
 import { EditorView } from "@codemirror/view";
+import { makeJsonTemplate } from "../json/to_json";
 import { Hint, JsonError, JsonLiteral, TypeHint } from "../json/types";
-import { ensureJsonState, jsonStateField } from "./json_state";
+import { jsonStateField } from "./json_state";
 
 export function jsonLinter(
   editable: "editable" | "read-only",
@@ -221,8 +222,6 @@ function getTimestampControlRows(
         insert: newJsonString,
       },
     });
-
-    ensureJsonState(view, (view as any).schema);
   };
 
   // Enter key handler for unix_millis input
@@ -300,6 +299,84 @@ function getTimestampControlRows(
   return [headerRow, controlsRow];
 }
 
+function getEnumDropdown(
+  view: EditorView,
+  typeHint: TypeHint,
+  enumDefinition: NonNullable<TypeHint["enumDefinition"]>,
+): HTMLDivElement {
+  const controlsRow = document.createElement("div");
+  controlsRow.className = "cm-diagnostic-controls";
+
+  const label = document.createElement("span");
+  label.className = "cm-diagnostic-label";
+  label.textContent = "Variant:";
+
+  const select = document.createElement("select");
+  select.className = "cm-diagnostic-input";
+
+  {
+    // Add the UNKNOWN variant
+    const option = document.createElement("option");
+    option.value = "UNKNOWN";
+    option.textContent = "UNKNOWN";
+    select.appendChild(option);
+  }
+  for (const variant of enumDefinition.variants) {
+    const option = document.createElement("option");
+    option.value = variant.name;
+    option.textContent = variant.name;
+    select.appendChild(option);
+  }
+
+  const currentValue = typeHint.valueContext?.value;
+  if (
+    currentValue &&
+    currentValue.kind === "literal" &&
+    currentValue.type === "string"
+  ) {
+    try {
+      select.value = JSON.parse(currentValue.jsonCode) as string;
+    } catch {
+      // Ignore invalid value and keep the default selection.
+    }
+  }
+
+  select.addEventListener("change", () => {
+    const variant = enumDefinition.variants.find(
+      (variant) => variant.name === select.value,
+    )!;
+    let newJsonString: string;
+    if (variant.type) {
+      const jsonState = view.state.field(jsonStateField, false)!;
+      const valueJson = makeJsonTemplate(
+        variant.type,
+        jsonState.recordIdToDefinition,
+      );
+      newJsonString = JSON.stringify(
+        {
+          kind: variant.name,
+          value: valueJson,
+        },
+        null,
+        2,
+      ).replaceAll("\n", "\n" + " ".repeat(typeHint.valueContext.value.indent));
+    } else {
+      newJsonString = JSON.stringify(variant.name);
+    }
+    view.dispatch({
+      changes: {
+        from: typeHint.segment.start,
+        to: typeHint.segment.end,
+        insert: newJsonString,
+      },
+    });
+  });
+
+  controlsRow.appendChild(label);
+  controlsRow.appendChild(select);
+  return controlsRow;
+}
+
 function hintToDiagnostic(
   typeHint: Hint,
   editable: "editable" | "read-only",
@@ -337,13 +414,21 @@ function hintToDiagnostic(
         // Render a timestamp editing control for timestamp hints.
         rows = getTimestampControlRows(view, typeHint);
       } else {
-        // Display the message for non-string types
+        // Display the message.
         const pieces = typeof message === "string" ? [message] : message;
         rows = pieces.map((piece) => {
           const row = document.createElement("div");
           row.textContent = piece;
           return row;
         });
+        if (
+          typeHint.valueContext &&
+          typeHint.enumDefinition &&
+          editable === "editable"
+        ) {
+          // Render a dropdown for selecting a different variant.
+          rows.push(getEnumDropdown(view, typeHint, typeHint.enumDefinition));
+        }
       }
 
       for (const row of rows) {

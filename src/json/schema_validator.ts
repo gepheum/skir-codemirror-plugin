@@ -1,6 +1,7 @@
 import { primitiveSerializer } from "skir-client";
 import { toJson } from "./to_json";
 import type {
+  EnumDefinition,
   FieldDefinition,
   Hint,
   JsonError,
@@ -60,7 +61,9 @@ class SchemaValidator {
     const { idToRecordDef, typeHintStack } = this;
     value.expectedType = schema;
     // For every call to pushTypeHint() there emust be one call to typeHintStack.pop()
-    const pushTypeHint = (): void => {
+    const pushTypeHint = (options?: {
+      enumDefinition?: EnumDefinition;
+    }): void => {
       const typeDesc = getTypeDesc(optionalSchema ?? schema);
       const typeDoc = getTypeDoc(schema, idToRecordDef);
       const message = [typeDesc];
@@ -78,6 +81,7 @@ class SchemaValidator {
         message: message.length === 1 ? message[0] : message,
         valueContext: { value, path },
         childHints: [],
+        enumDefinition: options?.enumDefinition,
       };
       if (typeHintStack.length) {
         const topOfStack = typeHintStack[typeHintStack.length - 1];
@@ -196,8 +200,14 @@ class SchemaValidator {
           } else if (value.kind === "literal" && value.type === "string") {
             const name = JSON.parse(value.jsonCode);
             const fieldDef = nameToVariantDef[name];
-            if (name === "UNKNOWN" || fieldDef) {
-              pushTypeHint();
+            if (fieldDef && fieldDef.type) {
+              this.errors.push({
+                kind: "error",
+                segment: value.segment,
+                message: "Expected: uppercase variant name",
+              });
+            } else if (name === "UNKNOWN" || fieldDef) {
+              pushTypeHint({ enumDefinition: recordDef });
               typeHintStack.pop();
             } else {
               this.errors.push({
@@ -492,13 +502,13 @@ function isFloat(value: JsonValue): boolean {
   }
   if (value.type === "number") {
     return true;
-  } else if (value.type === "string") {
-    try {
-      primitiveSerializer("float64").fromJsonCode(value.jsonCode);
-      return true;
-    } catch {
-      return false;
-    }
+  } else if (
+    value.type === "string" &&
+    (value.jsonCode === '"NaN"' ||
+      value.jsonCode === '"Infinity"' ||
+      value.jsonCode === '"-Infinity"')
+  ) {
+    return true;
   } else {
     return false;
   }

@@ -9,6 +9,7 @@ import { parseJsonValue } from "../json/json_parser";
 import { validateSchema } from "../json/schema_validator";
 import type {
   JsonParseResult,
+  RecordDefinition,
   TypeDefinition,
   ValidationResult,
 } from "../json/types";
@@ -17,6 +18,8 @@ export interface JsonState {
   readonly parseResult: JsonParseResult;
   readonly validationResult?: ValidationResult;
   readonly source: string;
+  readonly schema: TypeDefinition;
+  readonly recordIdToDefinition: { [id: string]: RecordDefinition };
 }
 
 const updateJsonState = StateEffect.define<JsonState>();
@@ -58,7 +61,15 @@ export function ensureJsonState(
     validationResult = validateSchema(parseResult.value, schema);
   }
 
-  const newState: JsonState = { parseResult, validationResult, source };
+  const recordIdToDefinition = indexRecordDefinitions(schema, currentState);
+
+  const newState: JsonState = {
+    parseResult,
+    validationResult,
+    source,
+    schema,
+    recordIdToDefinition,
+  };
 
   // Update the state if it's different
   if (!currentState || currentState !== newState) {
@@ -139,21 +150,37 @@ export function debouncedJsonParser(schema: TypeDefinition): Extension[] {
               insert: edit.replacement,
             }));
 
+            const oldState = this.view.state.field(jsonStateField, false);
+            const recordIdToDefinition = indexRecordDefinitions(
+              schema,
+              oldState,
+            );
+
             this.view.dispatch({
               changes,
               effects: updateJsonState.of({
                 parseResult,
                 validationResult,
                 source,
+                schema,
+                recordIdToDefinition,
               }),
               scrollIntoView: true,
             });
           } else {
+            const oldState = this.view.state.field(jsonStateField, false);
+            const recordIdToDefinition = indexRecordDefinitions(
+              schema,
+              oldState,
+            );
+
             this.view.dispatch({
               effects: updateJsonState.of({
                 parseResult,
                 validationResult,
                 source,
+                schema,
+                recordIdToDefinition,
               }),
             });
           }
@@ -167,4 +194,20 @@ export function debouncedJsonParser(schema: TypeDefinition): Extension[] {
       },
     ),
   ];
+}
+
+function indexRecordDefinitions(
+  schema: TypeDefinition,
+  oldState: JsonState | null | undefined,
+): {
+  [id: string]: RecordDefinition;
+} {
+  if (schema === oldState?.schema) {
+    return oldState.recordIdToDefinition;
+  }
+  const idToRecordDef: { [id: string]: RecordDefinition } = {};
+  for (const recordDef of schema.records) {
+    idToRecordDef[recordDef.id] = recordDef;
+  }
+  return idToRecordDef;
 }
