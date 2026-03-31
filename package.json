@@ -46,8 +46,7 @@
   },
   "dependencies": {
     "@codemirror/lang-json": "^6.0.2",
-    "@uiw/codemirror-theme-tokyo-night": "^4.25.4",
-    "@uiw/codemirror-theme-tokyo-night-day": "^4.25.9",
+    "@uiw/codemirror-themes-all": "^4.25.9",
     "codemirror": "^6.0.2",
     "skir-client": "^1.0.11"
   },

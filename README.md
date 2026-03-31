@@ -12,9 +12,12 @@ Demo: `npx skir-studio-demo`
 - In-editor hints and completions informed by the Skir type schema.
 - Read-only mode support for response viewing.
 - Built-in theme support:
-	- `tokyo-night`
-	- `tokyo-night-day`
+	- all presets from `@uiw/codemirror-themes-all`
 	- custom theme object
+- Optional `otherExtension` hook to append your own CodeMirror extension(s).
+
+Theme previews and names:
+https://www.npmjs.com/package/@uiw/codemirror-themes-all?activeTab=readme
 
 ## Install
 
@@ -30,6 +33,7 @@ The package root exports:
 - `ensureJsonState`
 - `toJson`
 - `CreateEditorStateParams` (type)
+- `BuiltinThemeName` (type)
 - `CustomTheme` (type)
 - `JsonState` (type)
 - all types from `./json/types`
@@ -51,7 +55,8 @@ const params: CreateEditorStateParams = {
 	// Optional:
 	// readOnly: true,
 	// json: "hello",
-	// theme: "tokyo-night-day",
+	// theme: "github-light",
+	// otherExtension: EditorView.lineWrapping,
 };
 
 const state = createEditorState(params);
@@ -104,7 +109,8 @@ if (jsonState.parseResult.value) {
 	schema: TypeDefinition,
 	readOnly?: true,
 	json?: Json,
-	theme?: "tokyo-night" | "tokyo-night-day" | CustomTheme,
+	theme?: BuiltinThemeName | CustomTheme,
+	otherExtension?: Extension,
 }
 ```
 
@@ -114,6 +120,10 @@ Behavior:
 - If `json` is omitted, a JSON template is generated from the schema.
 - `readOnly: true` enables non-editable mode.
 - `theme` defaults to `tokyo-night`.
+- `theme` accepts any built-in preset name from `BuiltinThemeName` (powered by `@uiw/codemirror-themes-all`) or a custom theme object.
+	See available theme previews in the package README:
+	https://www.npmjs.com/package/@uiw/codemirror-themes-all?activeTab=readme
+- `otherExtension` appends extra CodeMirror extension(s) at the end of the editor extension list.
 
 ## Local Dev Flow
 

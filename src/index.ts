@@ -1,5 +1,6 @@
 export { createEditorState } from "./codemirror/create_editor_state";
 export type {
+  BuiltinThemeName,
   CreateEditorStateParams,
   CustomTheme,
 } from "./codemirror/create_editor_state";

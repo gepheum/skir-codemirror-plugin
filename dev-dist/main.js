@@ -367,7 +367,7 @@ const schemaExample = {
 new EditorView({
     state: createEditorState({
         schema: schemaExample,
-        theme: "tokyo-night-day",
+        theme: "quietlight",
     }),
     parent: editorRoot,
 });
