@@ -73,6 +73,5 @@
     "diff": "^8.0.3",
     "minimatch": "^10.2.1",
     "serialize-javascript": "^7.0.4"
-  },
-  "customElements": "custom-elements.json"
+  }
 }
