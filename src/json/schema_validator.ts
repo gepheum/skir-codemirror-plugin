@@ -191,7 +191,8 @@ class SchemaValidator {
           // Enum
           const nameToVariantDef: { [name: string]: VariantDefinition } = {};
           recordDef.variants.forEach((variant) => {
-            nameToVariantDef[variant.name] = variant;
+            nameToVariantDef[variant.name.toLowerCase()] = variant;
+            nameToVariantDef[variant.name.toUpperCase()] = variant;
           });
           if (value.kind === "object") {
             pushTypeHint();
@@ -206,7 +207,7 @@ class SchemaValidator {
                 segment: value.segment,
                 message: "Expected: uppercase variant name",
               });
-            } else if (name === "UNKNOWN" || fieldDef) {
+            } else if (name === "unknown" || name === "UNKNOWN" || fieldDef) {
               pushTypeHint({ enumDefinition: recordDef });
               typeHintStack.pop();
             } else {
@@ -256,11 +257,13 @@ class SchemaValidator {
       return;
     }
     const kind: string = JSON.parse(kindKv.value.jsonCode);
-    if (kind !== kind.toLowerCase()) {
+    const isLowercase = kind === kind.toLowerCase();
+    const isUppercase = kind === kind.toUpperCase();
+    if (!isLowercase && !isUppercase) {
       this.errors.push({
         kind: "error",
         segment: kindKv.value.segment,
-        message: "Expected: lowercase variant name",
+        message: "Expected: lowercase or uppercase variant name",
       });
       return;
     }

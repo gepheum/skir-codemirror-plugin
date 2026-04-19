@@ -152,7 +152,7 @@ describe("schema_validator", () => {
     ]);
   });
 
-  it("validates enum (string literal)", () => {
+  it("validates enum (string literal accepts lower and upper)", () => {
     const schema: TypeDefinition = {
       type: { kind: "record", value: "MyEnum" },
       records: [
@@ -160,14 +160,100 @@ describe("schema_validator", () => {
           kind: "enum",
           id: "MyEnum",
           variants: [
-            { name: "First", number: 1 },
-            { name: "Second", number: 2 },
+            { name: "FOO", number: 1 },
+            { name: "BAR", number: 2 },
           ],
         },
       ],
     };
-    const result = validateSchema(parse('"First"'), schema);
-    expect(result).toMatch({ errors: [] });
+    const lowerResult = validateSchema(parse('"foo"'), schema);
+    expect(lowerResult).toMatch({ errors: [] });
+
+    const upperResult = validateSchema(parse('"FOO"'), schema);
+    expect(upperResult).toMatch({ errors: [] });
+  });
+
+  it("rejects mixed-case enum string literal", () => {
+    const schema: TypeDefinition = {
+      type: { kind: "record", value: "MyEnum" },
+      records: [
+        {
+          kind: "enum",
+          id: "MyEnum",
+          variants: [{ name: "FOO", number: 1 }],
+        },
+      ],
+    };
+
+    const result = validateSchema(parse('"Foo"'), schema);
+    expect(result.errors).toMatch([
+      {
+        message: "Unknown variant",
+      },
+    ]);
+  });
+
+  it("accepts UNKNOWN and unknown enum literals", () => {
+    const schema: TypeDefinition = {
+      type: { kind: "record", value: "MyEnum" },
+      records: [
+        {
+          kind: "enum",
+          id: "MyEnum",
+          variants: [{ name: "FOO", number: 1 }],
+        },
+      ],
+    };
+
+    expect(validateSchema(parse('"UNKNOWN"'), schema)).toMatch({ errors: [] });
+    expect(validateSchema(parse('"unknown"'), schema)).toMatch({ errors: [] });
+
+    const mixedCaseResult = validateSchema(parse('"Unknown"'), schema);
+    expect(mixedCaseResult.errors).toMatch([
+      {
+        message: "Unknown variant",
+      },
+    ]);
+  });
+
+  it("validates enum object kind in lower and upper", () => {
+    const schema: TypeDefinition = {
+      type: { kind: "record", value: "MyEnum" },
+      records: [
+        {
+          kind: "enum",
+          id: "MyEnum",
+          variants: [
+            {
+              name: "COMPLEX",
+              number: 1,
+              type: { kind: "primitive", value: "int32" },
+            },
+          ],
+        },
+      ],
+    };
+
+    expect(
+      validateSchema(parse('{"kind": "complex", "value": 123}'), schema),
+    ).toMatch({
+      errors: [],
+    });
+    expect(
+      validateSchema(parse('{"kind": "COMPLEX", "value": 123}'), schema),
+    ).toMatch({
+      errors: [],
+    });
+
+    const mixedCaseResult = validateSchema(
+      parse('{"kind": "Complex", "value": 123}'),
+      schema,
+    );
+    expect(mixedCaseResult.errors).toMatch([
+      {
+        message: "Expected: lowercase or uppercase variant name",
+      },
+    ]);
   });
 
   it("reports unknown enum variant", () => {

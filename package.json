@@ -1,6 +1,6 @@
 {
   "name": "skir-codemirror-plugin",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "",
   "homepage": "https://github.com/gepheum/skir-codemirror-plugin#readme",
   "bugs": {
@@ -48,7 +48,7 @@
     "@codemirror/lang-json": "^6.0.2",
     "@uiw/codemirror-themes-all": "^4.25.9",
     "codemirror": "^6.0.2",
-    "skir-client": "^1.0.11"
+    "skir-client": "^1.0.18"
   },
   "devDependencies": {
     "@custom-elements-manifest/analyzer": "^0.6.3",
