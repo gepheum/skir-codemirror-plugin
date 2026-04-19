@@ -251,7 +251,7 @@ describe("schema_validator", () => {
     );
     expect(mixedCaseResult.errors).toMatch([
       {
-        message: "Expected: lowercase or uppercase variant name",
+        message: "Unknown variant",
       },
     ]);
   });
@@ -271,6 +271,55 @@ describe("schema_validator", () => {
     expect(result.errors).toMatch([
       {
         message: "Unknown variant",
+      },
+    ]);
+  });
+
+  it("reports error when typed enum variant is provided as string", () => {
+    const schema: TypeDefinition = {
+      type: { kind: "record", value: "MyEnum" },
+      records: [
+        {
+          kind: "enum",
+          id: "MyEnum",
+          variants: [
+            {
+              name: "COMPLEX",
+              number: 1,
+              type: { kind: "primitive", value: "int32" },
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = validateSchema(parse('"COMPLEX"'), schema);
+    expect(result.errors).toMatch([
+      {
+        message: "Expected: constant variant",
+      },
+    ]);
+  });
+
+  it("reports error when constant enum variant is provided as object", () => {
+    const schema: TypeDefinition = {
+      type: { kind: "record", value: "MyEnum" },
+      records: [
+        {
+          kind: "enum",
+          id: "MyEnum",
+          variants: [{ name: "SIMPLE", number: 1 }],
+        },
+      ],
+    };
+
+    const result = validateSchema(parse('{"kind": "SIMPLE"}'), schema);
+    expect(result.errors).toMatch([
+      {
+        message: "Expected: wrapper variant",
+      },
+      {
+        message: "Missing: 'value'",
       },
     ]);
   });

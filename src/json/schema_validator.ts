@@ -205,7 +205,7 @@ class SchemaValidator {
               this.errors.push({
                 kind: "error",
                 segment: value.segment,
-                message: "Expected: uppercase variant name",
+                message: "Expected: constant variant",
               });
             } else if (name === "unknown" || name === "UNKNOWN" || fieldDef) {
               pushTypeHint({ enumDefinition: recordDef });
@@ -257,16 +257,6 @@ class SchemaValidator {
       return;
     }
     const kind: string = JSON.parse(kindKv.value.jsonCode);
-    const isLowercase = kind === kind.toLowerCase();
-    const isUppercase = kind === kind.toUpperCase();
-    if (!isLowercase && !isUppercase) {
-      this.errors.push({
-        kind: "error",
-        segment: kindKv.value.segment,
-        message: "Expected: lowercase or uppercase variant name",
-      });
-      return;
-    }
     const variantDef = nameToVariantDef[kind];
     if (!variantDef) {
       this.errors.push({
@@ -275,6 +265,12 @@ class SchemaValidator {
         message: "Unknown variant",
       });
       return;
+    } else if (variantDef.type === undefined) {
+      this.errors.push({
+        kind: "error",
+        segment: kindKv.value.segment,
+        message: "Expected: wrapper variant",
+      });
     }
     const valueKv = object.keyValues["value"];
     if (!valueKv) {
